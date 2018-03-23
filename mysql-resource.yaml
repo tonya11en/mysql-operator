@@ -1,7 +1,0 @@
-apiVersion: tallen.io/v1alpha1
-kind: MySQL
-metadata:
-  name: mysql
-spec:
-  image: mysql:5.6
-  rootPassword: password

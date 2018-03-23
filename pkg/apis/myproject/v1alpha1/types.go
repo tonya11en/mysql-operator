@@ -16,3 +16,11 @@ type MySqlSpec struct {
 	Image        string `json:"image"`
 	RootPassword string `json:"rootPassword"`
 }
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+type MySqlList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+	Items           []MySql `json:items"`
+}

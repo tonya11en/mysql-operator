@@ -15,7 +15,7 @@ type MySqlController struct {
 	mySqlClientset mysqlclient.MyprojectV1alpha1Interface
 }
 
-// newMySqlController creates a controller for watching mysql custom resources created
+// Creates a controller watching for mysql custom resources.
 func newMySqlController(context *opkit.Context, mySqlClientset mysqlclient.MyprojectV1alpha1Interface) *MySqlController {
 	return &MySqlController{
 		context:        context,
@@ -38,9 +38,7 @@ func (c *MySqlController) StartWatch(namespace string, stopCh chan struct{}) err
 }
 
 func (c *MySqlController) onAdd(obj interface{}) {
-	s := obj.(*mysql.MySql).DeepCopy()
-
-	fmt.Printf("Added MySql")
+	fmt.Printf("MySql add handler")
 }
 
 func (c *MySqlController) onUpdate(oldObj, newObj interface{}) {

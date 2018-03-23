@@ -18,13 +18,13 @@ import (
 
 func main() {
 	fmt.Println("Getting kubernetes context")
-	context, mysqlClientset, err := createContext()
+	context, mySqlClientset, err := createContext()
 	if err != nil {
 		fmt.Printf("failed to create context. %+v\n", err)
 		os.Exit(1)
 	}
 
-	// Create and wait for CRD resources
+	// Create and wait for CRD resources.
 	fmt.Println("Registering the mysql resource")
 	resources := []opkit.CustomResource{mysql.MySqlResource}
 	err = opkit.CreateCustomResources(*context, resources)
@@ -33,12 +33,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	// create signals to stop watching the resources
+	// Create signals to stop watching the resources.
 	signalChan := make(chan os.Signal, 1)
 	stopChan := make(chan struct{})
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 
-	// start watching the mysql resource
+	// Start watching the mysql resource.
 	fmt.Println("Watching the mysql resource")
 	controller := newMySqlController(context, mySqlClientset)
 	controller.StartWatch(v1.NamespaceAll, stopChan)
@@ -69,7 +69,7 @@ func createContext() (*opkit.Context, mysqlclient.MyprojectV1alpha1Interface, er
 		return nil, nil, fmt.Errorf("failed to create k8s API extension clientset. %+v", err)
 	}
 
-	mysqlClientset, err := mysqlclient.NewForConfig(config)
+	mySqlClientset, err := mysqlclient.NewForConfig(config)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create mysql clientset. %+v", err)
 	}
@@ -80,6 +80,6 @@ func createContext() (*opkit.Context, mysqlclient.MyprojectV1alpha1Interface, er
 		Interval:              500 * time.Millisecond,
 		Timeout:               60 * time.Second,
 	}
-	return context, mysqlClientset, nil
+	return context, mySqlClientset, nil
 
 }

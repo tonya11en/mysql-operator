@@ -19,13 +19,13 @@ var (
 // schemeGroupVersion is group version used to register these objects
 var SchemeGroupVersion = schema.GroupVersion{Group: "tallen.io", Version: "v1alpha1"}
 
-var MySqlResource = opkit.CustomResrouce{
+var MySqlResource = opkit.CustomResource{
 	Name:    "mysql",
 	Plural:  "mysql databases",
 	Group:   "tallen.io",
 	Version: "v1alpha1",
 	Scope:   apiextensionsv1beta1.NamespaceScoped,
-	Kind:    reflect.TypeOf(Sample{}).Name(),
+	Kind:    reflect.TypeOf(MySql{}).Name(),
 }
 
 func init() {
