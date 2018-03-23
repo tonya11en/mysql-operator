@@ -1,5 +1,5 @@
-apiVersion: "stable.example.com/v1"
-kind: MySql
+apiVersion: "mysqls.tallen.io/v1alpha1"
+kind: mysql
 metadata:
   name: mysql-object
 spec:

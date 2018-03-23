@@ -39,7 +39,9 @@ func Resource(resource string) schema.GroupResource {
 
 // Adds the list of known types to api.Scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
-	scheme.AddKnownTypes(SchemeGroupVersion, &MySql{})
+	scheme.AddKnownTypes(SchemeGroupVersion,
+		&MySql{},
+		&MySqlList{})
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
 }
