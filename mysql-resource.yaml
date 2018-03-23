@@ -1,7 +1,7 @@
-apiVersion: "mysqls.tallen.io/v1alpha1"
-kind: mysql
+apiVersion: tallen.io/v1alpha1
+kind: MySql
 metadata:
   name: mysql-object
 spec:
   image: mysql:5.6
-  rootPassword: password
+  rootPassword: password!
