@@ -21,7 +21,7 @@ var SchemeGroupVersion = schema.GroupVersion{Group: "tallen.io", Version: "v1alp
 
 var MySqlResource = opkit.CustomResource{
 	Name:    "mysql",
-	Plural:  "mysql databases",
+	Plural:  "mysqls",
 	Group:   "tallen.io",
 	Version: "v1alpha1",
 	Scope:   apiextensionsv1beta1.NamespaceScoped,
