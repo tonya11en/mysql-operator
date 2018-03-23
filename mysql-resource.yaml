@@ -1,4 +1,4 @@
-apiVersion: tallen.io/v1alpha1
+apiVersion: myproject.io/v1alpha1
 kind: MySql
 metadata:
   name: mysql

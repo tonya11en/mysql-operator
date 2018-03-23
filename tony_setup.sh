@@ -4,7 +4,7 @@ set -x
 # Clean up any leftovers from last time.
 kubectl delete -f mysql-resource.yaml
 kubectl delete -f mysql-operator.yaml
-kubectl delete crd mysqls.tallen.io
+kubectl delete crd mysqls.myproject.io
 
 set -e
 
@@ -23,4 +23,4 @@ kubectl get pod -l app=mysql-operator
 # Create the resource.
 kubectl create -f mysql-resource.yaml
 sleep 3
-kubectl get mysqls.tallen.io
+kubectl get mysqls.myproject.io

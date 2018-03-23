@@ -41,18 +41,18 @@ func (c *MySqlController) StartWatch(namespace string, stopCh chan struct{}) err
 func (c *MySqlController) onAdd(obj interface{}) {
 	s := obj.(*mysql.MySql).DeepCopy()
 
-	fmt.Printf("MySql add handler with name: %s", s.Name)
+	fmt.Println("Handling MySql add")
 }
 
 func (c *MySqlController) onUpdate(oldObj, newObj interface{}) {
 	sOld := oldObj.(*mysql.MySql).DeepCopy()
 	sNew := newObj.(*mysql.MySql).DeepCopy()
 
-	fmt.Printf("MySql update handler with name %s to %s", sOld.Name, sNew.Name)
+	fmt.Println("Handling MySql update")
 }
 
 func (c *MySqlController) onDelete(obj interface{}) {
 	s := obj.(*mysql.MySql).DeepCopy()
 
-	fmt.Printf("MySql delete handler with name: %s", s.Name)
+	fmt.Println("Handling MySql delete")
 }
