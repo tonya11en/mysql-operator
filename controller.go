@@ -25,6 +25,7 @@ func newMySqlController(context *opkit.Context, mySqlClientset mysqlclient.Mypro
 
 // Watch watches for instances of MySql custom resources and acts on them
 func (c *MySqlController) StartWatch(namespace string, stopCh chan struct{}) error {
+	fmt.Println("Starting watch on the mysql resource")
 
 	resourceHandlers := cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.onAdd,
@@ -38,13 +39,20 @@ func (c *MySqlController) StartWatch(namespace string, stopCh chan struct{}) err
 }
 
 func (c *MySqlController) onAdd(obj interface{}) {
-	fmt.Printf("MySql add handler")
+	s := obj.(*mysql.MySql).DeepCopy()
+
+	fmt.Printf("MySql add handler with name: %s", s.Name)
 }
 
 func (c *MySqlController) onUpdate(oldObj, newObj interface{}) {
-	fmt.Printf("MySql update handler")
+	sOld := oldObj.(*mysql.MySql).DeepCopy()
+	sNew := newObj.(*mysql.MySql).DeepCopy()
+
+	fmt.Printf("MySql update handler with name %s to %s", sOld.Name, sNew.Name)
 }
 
 func (c *MySqlController) onDelete(obj interface{}) {
-	fmt.Printf("MySql delete handler")
+	s := obj.(*mysql.MySql).DeepCopy()
+
+	fmt.Printf("MySql delete handler with name: %s", s.Name)
 }

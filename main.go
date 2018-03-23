@@ -39,7 +39,6 @@ func main() {
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 
 	// Start watching the mysql resource.
-	fmt.Println("Watching the mysql resource")
 	controller := newMySqlController(context, mySqlClientset)
 	controller.StartWatch(v1.NamespaceAll, stopChan)
 
