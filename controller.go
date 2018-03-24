@@ -29,6 +29,7 @@ import (
 	mysql "github.com/tonya11en/mysql-operator/pkg/apis/myproject/v1alpha1"
 	mysqlclient "github.com/tonya11en/mysql-operator/pkg/client/clientset/versioned/typed/myproject/v1alpha1"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 )
@@ -120,6 +121,31 @@ func (c *MySqlController) makeService(name string, port int32, pod *v1.Pod) (*v1
 	}
 
 	return svc, err
+}
+
+// Create a PVC. Note that this is specific to the example found here:
+// https://kubernetes.io/docs/tasks/run-application/run-single-instance-stateful-application/
+func (c *MySqlController) makePVC(name string) (*v1.PersistentVolumeClaim, error) {
+	coreV1Client := c.context.Clientset.CoreV1()
+	pvc, err := coreV1Client.PersistentVolumeClaims(v1.NamespaceDefault).Create(&v1.PersistentVolumeClaim{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1.PersistentVolumeClaimSpec{
+			AccessModes: []v1.PersistentVolumeAccessMode{"ReadWriteOnce"},
+			Resources: v1.ResourceRequirements{
+				Requests: v1.ResourceList{
+					"storage": resource.MustParse("20GiB"),
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		fmt.Errorf("failed to create pvc. %+v", err)
+	}
+
+	return pvc, err
 }
 
 func (c *MySqlController) onAdd(obj interface{}) {
