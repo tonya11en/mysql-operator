@@ -29,6 +29,7 @@ import (
 	mysql "github.com/tonya11en/mysql-operator/pkg/apis/myproject/v1alpha1"
 	mysqlclient "github.com/tonya11en/mysql-operator/pkg/client/clientset/versioned/typed/myproject/v1alpha1"
 	"k8s.io/api/core/v1"
+	extensions "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
@@ -146,6 +147,20 @@ func (c *MySqlController) makePVC(name string) (*v1.PersistentVolumeClaim, error
 	}
 
 	return pvc, err
+}
+
+// Make a deployment. Note that this is specific to the example found here:
+// https://kubernetes.io/docs/tasks/run-application/run-single-instance-stateful-application/
+func (c *MySqlController) makeDeployment(name string, pod *v1.Pod) *extensions.Deployment {
+	i := int32(1)
+	return &extensions.Deployment{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: name,
+		},
+		Spec: extensions.DeploymentSpec{
+			// TODO (tallen):			Template: pod.Spec,
+			Replicas: &i},
+	}
 }
 
 func (c *MySqlController) onAdd(obj interface{}) {
