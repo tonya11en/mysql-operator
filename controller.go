@@ -64,10 +64,9 @@ func (c *MySqlController) StartWatch(namespace string, stopCh chan struct{}) err
 	return nil
 }
 
-// Create a pod.
-func (c *MySqlController) makePod(objName string, ctrName string, ctrImage string, image string, port int32, podGroup string) (*v1.Pod, error) {
-	coreV1Client := c.context.Clientset.CoreV1()
-	pod, err := coreV1Client.Pods(v1.NamespaceDefault).Create(&v1.Pod{
+// Create a pod spec.
+func (c *MySqlController) makePodSpec(objName string, ctrName string, ctrImage string, port int32, podGroup string) *v1.PodTemplateSpec {
+	podSpec := &v1.PodTemplateSpec{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name: objName,
 		},
@@ -84,23 +83,13 @@ func (c *MySqlController) makePod(objName string, ctrName string, ctrImage strin
 				},
 			},
 		},
-	})
-	if err != nil {
-		fmt.Errorf("failed to create pod. %+v", err)
-		return pod, err
 	}
-
-	pod.SetLabels(map[string]string{"pod-group": podGroup})
-	pod, err = coreV1Client.Pods(v1.NamespaceDefault).Update(pod)
-	if err != nil {
-		fmt.Errorf("failed to set label on pod. %+v", err)
-	}
-
-	return pod, err
+	return podSpec
 }
 
 // Create a service.
-func (c *MySqlController) makeService(name string, port int32, pod *v1.Pod) (*v1.Service, error) {
+func (c *MySqlController) makeService(name string, port int32) (*v1.Service, error) {
+	fmt.Println("Making svc")
 	coreV1Client := c.context.Clientset.CoreV1()
 	svc, err := coreV1Client.Services(v1.NamespaceDefault).Create(&v1.Service{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -108,7 +97,7 @@ func (c *MySqlController) makeService(name string, port int32, pod *v1.Pod) (*v1
 		},
 		Spec: v1.ServiceSpec{
 			Type:     v1.ServiceTypeNodePort,
-			Selector: pod.Labels,
+			Selector: map[string]string{"app": "mysql"},
 			Ports: []v1.ServicePort{
 				{
 					Port: port,
@@ -118,7 +107,7 @@ func (c *MySqlController) makeService(name string, port int32, pod *v1.Pod) (*v1
 	})
 
 	if err != nil {
-		fmt.Errorf("failed to create service. %+v", err)
+		fmt.Println("failed to create service.", err)
 	}
 
 	return svc, err
@@ -127,6 +116,7 @@ func (c *MySqlController) makeService(name string, port int32, pod *v1.Pod) (*v1
 // Create a PVC. Note that this is specific to the example found here:
 // https://kubernetes.io/docs/tasks/run-application/run-single-instance-stateful-application/
 func (c *MySqlController) makePVC(name string) (*v1.PersistentVolumeClaim, error) {
+	fmt.Println("Making pvc")
 	coreV1Client := c.context.Clientset.CoreV1()
 	pvc, err := coreV1Client.PersistentVolumeClaims(v1.NamespaceDefault).Create(&v1.PersistentVolumeClaim{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -136,14 +126,14 @@ func (c *MySqlController) makePVC(name string) (*v1.PersistentVolumeClaim, error
 			AccessModes: []v1.PersistentVolumeAccessMode{"ReadWriteOnce"},
 			Resources: v1.ResourceRequirements{
 				Requests: v1.ResourceList{
-					"storage": resource.MustParse("20GiB"),
+					"storage": resource.MustParse("20G"),
 				},
 			},
 		},
 	})
 
 	if err != nil {
-		fmt.Errorf("failed to create pvc. %+v", err)
+		fmt.Println("failed to create pvc.", err)
 	}
 
 	return pvc, err
@@ -151,24 +141,36 @@ func (c *MySqlController) makePVC(name string) (*v1.PersistentVolumeClaim, error
 
 // Make a deployment. Note that this is specific to the example found here:
 // https://kubernetes.io/docs/tasks/run-application/run-single-instance-stateful-application/
-func (c *MySqlController) makeDeployment(name string, pod *v1.Pod) *extensions.Deployment {
+func (c *MySqlController) makeDeployment(name string, podSpec v1.PodTemplateSpec) *extensions.Deployment {
+	fmt.Println("Making deployment")
 	i := int32(1)
 	return &extensions.Deployment{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name: name,
 		},
 		Spec: extensions.DeploymentSpec{
-			// TODO (tallen):			Template: pod.Spec,
+			Template: podSpec,
 			Replicas: &i},
 	}
 }
 
 func (c *MySqlController) onAdd(obj interface{}) {
 	fmt.Println("Handling MySql add")
+	s := obj.(*mysql.MySql).DeepCopy()
 
-	// Make mysql service
-	// Make persistent volume claim
-	// Make deployment
+	podSpec := c.makePodSpec(s.Name, "mysql-ctr", s.Spec.Image, 3306, "mysql-pod-group")
+
+	_, err := c.makeService(s.Name, 3306)
+	if err != nil {
+		return
+	}
+
+	_, err = c.makePVC("mysql-pv-claim")
+	if err != nil {
+		return
+	}
+
+	c.makeDeployment(s.Name, *podSpec)
 }
 
 func (c *MySqlController) onUpdate(oldObj, newObj interface{}) {
