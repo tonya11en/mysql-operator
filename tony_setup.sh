@@ -5,6 +5,9 @@ set -x
 kubectl delete -f mysql-resource.yaml
 kubectl delete -f mysql-operator.yaml
 kubectl delete crd mysqls.myproject.io
+kubectl delete --all pods
+kubectl delete deployment,svc mysql
+kubectl delete pvc mysql-pv-claim
 
 set -e
 
@@ -18,7 +21,7 @@ docker save mysql-operator:0.1 | eval $(minikube docker-env)
 # Start the operator.
 kubectl create -f mysql-operator.yaml
 sleep 3
-kubectl get pod -l app=mysql-operator
+kubectl get pod
 
 # Create the resource.
 kubectl create -f mysql-resource.yaml
