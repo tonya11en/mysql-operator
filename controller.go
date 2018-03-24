@@ -97,6 +97,31 @@ func (c *MySqlController) makePod(objName string, ctrName string, ctrImage strin
 	return pod, err
 }
 
+// Create a service.
+func (c *MySqlController) makeService(name string, port int32, pod *v1.Pod) (*v1.Service, error) {
+	coreV1Client := c.context.Clientset.CoreV1()
+	svc, err := coreV1Client.Services(v1.NamespaceDefault).Create(&v1.Service{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: name,
+		},
+		Spec: v1.ServiceSpec{
+			Type:     v1.ServiceTypeNodePort,
+			Selector: pod.Labels,
+			Ports: []v1.ServicePort{
+				{
+					Port: port,
+				},
+			},
+		},
+	})
+
+	if err != nil {
+		fmt.Errorf("failed to create service. %+v", err)
+	}
+
+	return svc, err
+}
+
 func (c *MySqlController) onAdd(obj interface{}) {
 	fmt.Println("Handling MySql add")
 
