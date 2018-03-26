@@ -10,6 +10,9 @@ You can run Kubernetes locally with
 # From the root of repo, ensure all the libraries required are pulled down.
 dep ensure
 
+# build the sample operator binary
+CGO_ENABLED=0 GOOS=linux go build
+
 # Build the docker container.
 docker build -t mysql-operator:0.1 .
 docker save mysql-operator:0.1 | eval $(minikube docker-env) # Only needed for minikube.
