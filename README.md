@@ -1,5 +1,9 @@
 # MySQL Operator
-A Kubernetes custom resource and Operator that allows a user to describe a trivial single-instance of MySQL. The tasks for [running a single-instance stateful application](https://kubernetes.io/docs/tasks/run-application/run-single-instance-stateful-application/#accessing-the-mysql-instance) are done by this operator.
+A Kubernetes custom resource and Operator that allows a user to describe a trivial single-instance of MySQL. The tasks for [running a single-instance stateful application](https://kubernetes.io/docs/tasks/run-application/run-single-instance-stateful-application/) are done by this operator.
+
+## Pre-reqs
+You can run Kubernetes locally with
+[Minikube](https://kubernetes.io/docs/getting-started-guides/minikube/).
 
 ## Building
 ```bash
@@ -33,3 +37,9 @@ changes to the service, it's recommended to tear it down and redeploy.
 kubectl delete -f mysql-resource.yaml
 kubectl delete -f mysql-operator.yaml
 ```
+
+## Idiosynchrasies
+When deleting the resource, the pod that was created during the deploy is left
+intact. However, redeploying a MySQL server won't create a new pod on your
+cluster. This is also seen when following [the instructions this operator is
+attempting to automate](https://kubernetes.io/docs/tasks/run-application/run-single-instance-stateful-application/)
