@@ -28,8 +28,8 @@ import (
 	opkit "github.com/rook/operator-kit"
 	mysql "github.com/tonya11en/mysql-operator/pkg/apis/myproject/v1alpha1"
 	mysqlclient "github.com/tonya11en/mysql-operator/pkg/client/clientset/versioned/typed/myproject/v1alpha1"
+	"k8s.io/api/apps/v1beta2"
 	"k8s.io/api/core/v1"
-	extensions "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
@@ -64,26 +64,52 @@ func (c *MySqlController) StartWatch(namespace string, stopCh chan struct{}) err
 	return nil
 }
 
-// Create a pod spec.
-func (c *MySqlController) makePodSpec(objName string, ctrName string, ctrImage string, port int32, podGroup string) *v1.PodTemplateSpec {
+// Create a pod spec. Note that this is specific to the example found here:
+// https://kubernetes.io/docs/tasks/run-application/run-single-instance-stateful-application/
+func (c *MySqlController) makePodSpec(objName string, ctrName string, ctrImage string, port int32, podGroup string, envVars map[string]string) *v1.PodTemplateSpec {
+	var env []v1.EnvVar
+	for k, v := range envVars {
+		env = append(env, v1.EnvVar{Name: k, Value: v})
+	}
+
+	volumeName := objName + "-persistent-storage"
 	podSpec := &v1.PodTemplateSpec{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name: objName,
+			Name:   objName,
+			Labels: map[string]string{"app": "mysql"},
 		},
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{
 				{
 					Name:  ctrName,
 					Image: ctrImage,
+					Env:   env,
 					Ports: []v1.ContainerPort{
 						{
 							ContainerPort: port,
+						},
+					},
+					VolumeMounts: []v1.VolumeMount{
+						{
+							Name:      volumeName,
+							MountPath: "/var/lib/" + objName,
+						},
+					},
+				},
+			},
+			Volumes: []v1.Volume{
+				{
+					Name: volumeName,
+					VolumeSource: v1.VolumeSource{
+						PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+							ClaimName: objName + "-pv-claim",
 						},
 					},
 				},
 			},
 		},
 	}
+
 	return podSpec
 }
 
@@ -93,16 +119,17 @@ func (c *MySqlController) makeService(name string, port int32) (*v1.Service, err
 	coreV1Client := c.context.Clientset.CoreV1()
 	svc, err := coreV1Client.Services(v1.NamespaceDefault).Create(&v1.Service{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name: name,
+			Name:   name,
+			Labels: map[string]string{"app": "mysql"},
 		},
 		Spec: v1.ServiceSpec{
-			Type:     v1.ServiceTypeNodePort,
 			Selector: map[string]string{"app": "mysql"},
 			Ports: []v1.ServicePort{
 				{
 					Port: port,
 				},
 			},
+			ClusterIP: v1.ClusterIPNone,
 		},
 	})
 
@@ -141,35 +168,50 @@ func (c *MySqlController) makePVC(name string) (*v1.PersistentVolumeClaim, error
 
 // Make a deployment. Note that this is specific to the example found here:
 // https://kubernetes.io/docs/tasks/run-application/run-single-instance-stateful-application/
-func (c *MySqlController) makeDeployment(name string, podSpec v1.PodTemplateSpec) *extensions.Deployment {
-	fmt.Println("Making deployment")
-	i := int32(1)
-	return &extensions.Deployment{
+func (c *MySqlController) makeDeployment(name string, podSpec v1.PodTemplateSpec) (*v1beta2.Deployment, error) {
+	fmt.Println("Making deployment @tallen1")
+	appsClient := c.context.Clientset.AppsV1beta2()
+	deployment, err := appsClient.Deployments(v1.NamespaceDefault).Create(&v1beta2.Deployment{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name: name,
 		},
-		Spec: extensions.DeploymentSpec{
+		Spec: v1beta2.DeploymentSpec{
 			Template: podSpec,
-			Replicas: &i},
+			Selector: &meta_v1.LabelSelector{
+				MatchLabels: map[string]string{"app": "mysql"},
+			},
+			Strategy: v1beta2.DeploymentStrategy{
+				Type: v1beta2.RecreateDeploymentStrategyType,
+			},
+		},
+	})
+
+	if err != nil {
+		fmt.Println("failed to create deployment.", err)
 	}
+
+	return deployment, err
 }
 
 func (c *MySqlController) onAdd(obj interface{}) {
 	fmt.Println("Handling MySql add")
-	s := obj.(*mysql.MySql).DeepCopy()
 
-	podSpec := c.makePodSpec(s.Name, "mysql-ctr", s.Spec.Image, 3306, "mysql-pod-group")
+	s := obj.(*mysql.MySql).DeepCopy()
 
 	_, err := c.makeService(s.Name, 3306)
 	if err != nil {
 		return
 	}
 
-	_, err = c.makePVC("mysql-pv-claim")
+	_, err = c.makePVC(s.Name + "-pv-claim")
 	if err != nil {
 		return
 	}
 
+	podEnvVars := map[string]string{
+		"MYSQL_ROOT_PASSWORD": s.Spec.RootPassword,
+	}
+	podSpec := c.makePodSpec(s.Name, "mysql-ctr", s.Spec.Image, 3306, "mysql-pod-group", podEnvVars)
 	c.makeDeployment(s.Name, *podSpec)
 }
 
