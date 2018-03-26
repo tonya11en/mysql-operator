@@ -72,7 +72,7 @@ func (c *MySqlController) makePodSpec(objName string, ctrName string, ctrImage s
 		env = append(env, v1.EnvVar{Name: k, Value: v})
 	}
 
-	volumeName := objName + "-persistent-storage"
+	volumeName := "mysql-persistent-storage"
 	podSpec := &v1.PodTemplateSpec{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:   objName,
@@ -102,7 +102,7 @@ func (c *MySqlController) makePodSpec(objName string, ctrName string, ctrImage s
 					Name: volumeName,
 					VolumeSource: v1.VolumeSource{
 						PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
-							ClaimName: objName + "-pv-claim",
+							ClaimName: "mysql-pv-claim",
 						},
 					},
 				},
