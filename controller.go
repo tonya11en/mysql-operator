@@ -255,6 +255,9 @@ func (c *MySqlController) onAdd(obj interface{}) {
 
 func (c *MySqlController) onUpdate(oldObj, newObj interface{}) {
 	fmt.Println("Handling MySql update")
+
+	// This is currently a no-op because the MySQL resource currently has nothing
+	// in its spec that can be modified without being disruptive.
 }
 
 func (c *MySqlController) onDelete(obj interface{}) {

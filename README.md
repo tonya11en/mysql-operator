@@ -22,7 +22,14 @@ kubectl create -f mysql-resource.yaml
 # Verify the MySQL resource is created by creating a new pod in the cluster and
 # running a MySQL client that connects to the newly created service.
 kubectl run -it --rm --image=mysql:5.6 --restart=Never mysql-client -- mysql -h mysql -ppassword
+```
 
-# Delete the MySQL resource.
+There is no support for updating the resource because there is nothing in its
+spec that will allow for a non-disruptive change to the service. To make
+changes to the service, it's recommended to tear it down and redeploy.
+
+## Cleanup
+```bash
 kubectl delete -f mysql-resource.yaml
+kubectl delete -f mysql-operator.yaml
 ```
