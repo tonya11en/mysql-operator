@@ -30,6 +30,7 @@ import (
 	mysqlclient "github.com/tonya11en/mysql-operator/pkg/client/clientset/versioned/typed/myproject/v1alpha1"
 	"k8s.io/api/apps/v1beta2"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
@@ -237,12 +238,12 @@ func (c *MySqlController) onAdd(obj interface{}) {
 	s := obj.(*mysql.MySql).DeepCopy()
 
 	_, err := c.makeService(s.Name, 3306)
-	if err != nil {
+	if !errors.IsAlreadyExists(err) {
 		return
 	}
 
 	_, err = c.makePVC(s.Name)
-	if err != nil {
+	if !errors.IsAlreadyExists(err) {
 		return
 	}
 
