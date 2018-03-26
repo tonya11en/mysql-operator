@@ -40,9 +40,3 @@ changes to the service, it's recommended to tear it down and redeploy.
 kubectl delete -f mysql-resource.yaml
 kubectl delete -f mysql-operator.yaml
 ```
-
-## Idiosynchrasies
-When deleting the resource, the pod that was created during the deploy is left
-intact. However, redeploying a MySQL server won't create a new pod on your
-cluster. This is also seen when following [the instructions this operator is
-attempting to automate](https://kubernetes.io/docs/tasks/run-application/run-single-instance-stateful-application/)

@@ -141,18 +141,6 @@ func (c *MySqlController) makeService(name string, port int32) (*v1.Service, err
 	return svc, err
 }
 
-func (c *MySqlController) deleteService(name string) error {
-	coreV1Client := c.context.Clientset.CoreV1()
-
-	var options meta_v1.DeleteOptions
-	err := coreV1Client.Services(v1.NamespaceDefault).Delete(name, &options)
-	if err != nil {
-		fmt.Println("failed to delete service:", err)
-	}
-
-	return err
-}
-
 // Create a PVC. Note that this is specific to the example found here:
 // https://kubernetes.io/docs/tasks/run-application/run-single-instance-stateful-application/
 func (c *MySqlController) makePVC(name string) (*v1.PersistentVolumeClaim, error) {
@@ -177,16 +165,6 @@ func (c *MySqlController) makePVC(name string) (*v1.PersistentVolumeClaim, error
 	}
 
 	return pvc, err
-}
-
-func (c *MySqlController) deletePVC(name string) error {
-	coreV1Client := c.context.Clientset.CoreV1()
-	var options meta_v1.DeleteOptions
-	err := coreV1Client.PersistentVolumeClaims(v1.NamespaceDefault).Delete(getPvcName(name), &options)
-	if err != nil {
-		fmt.Println("failed to delete pvc:", err)
-	}
-	return err
 }
 
 // Make a deployment. Note that this is specific to the example found here:
@@ -214,18 +192,6 @@ func (c *MySqlController) makeDeployment(name string, podSpec v1.PodTemplateSpec
 	}
 
 	return deployment, err
-}
-
-func (c *MySqlController) deleteDeployment(name string) error {
-	appsClient := c.context.Clientset.AppsV1beta2()
-	var options meta_v1.DeleteOptions
-
-	err := appsClient.Deployments(v1.NamespaceDefault).Delete(name, &options)
-	if err != nil {
-		fmt.Println("failed to delete deployment:", err)
-	}
-
-	return err
 }
 
 func getPvcName(objName string) string {
@@ -261,18 +227,46 @@ func (c *MySqlController) onUpdate(oldObj, newObj interface{}) {
 	// in its spec that can be modified without being disruptive.
 }
 
+// This is a single-instance MySQL operator, so we can get away with deleting
+// all objects related to the app. We have to do it this way also because
+// cascading deletes (to specify all related items) aren't supported.
 func (c *MySqlController) onDelete(obj interface{}) {
 	fmt.Println("Handling MySql delete")
 
 	s := obj.(*mysql.MySql).DeepCopy()
+	var delOpts meta_v1.DeleteOptions
+	listOpts := meta_v1.ListOptions{LabelSelector: "app=mysql"}
 
-	if c.deleteService(s.Name) != nil {
-		return
+	// Delete deployments.
+	appsClient := c.context.Clientset.AppsV1beta2()
+	err := appsClient.Deployments(v1.NamespaceDefault).DeleteCollection(&delOpts, listOpts)
+	if err != nil {
+		fmt.Println("failed to delete deployment:", err)
 	}
-	if c.deleteDeployment(s.Name) != nil {
-		return
+
+	// Delete service.
+	coreV1Client := c.context.Clientset.CoreV1()
+	err = coreV1Client.Services(v1.NamespaceDefault).Delete(s.Name, &delOpts)
+	if err != nil {
+		fmt.Println("failed to delete service:", err)
 	}
-	if c.deletePVC(s.Name) != nil {
-		return
+
+	// Delete replica sets.
+	err = appsClient.ReplicaSets(v1.NamespaceDefault).DeleteCollection(&delOpts, listOpts)
+	if err != nil {
+		fmt.Println("failed to delete replication controller:", err)
 	}
+
+	// Delete PVC.
+	err = coreV1Client.PersistentVolumeClaims(v1.NamespaceDefault).Delete(getPvcName(s.Name), &delOpts)
+	if err != nil {
+		fmt.Println("failed to delete pvc:", err)
+	}
+
+	// Delete pods.
+	err = coreV1Client.Pods(v1.NamespaceDefault).DeleteCollection(&delOpts, listOpts)
+	if err != nil {
+		fmt.Println("failed to delete pod:", err)
+	}
+
 }
