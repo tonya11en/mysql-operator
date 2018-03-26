@@ -238,12 +238,12 @@ func (c *MySqlController) onAdd(obj interface{}) {
 	s := obj.(*mysql.MySql).DeepCopy()
 
 	_, err := c.makeService(s.Name, 3306)
-	if !errors.IsAlreadyExists(err) {
+	if !errors.IsAlreadyExists(err) && err != nil {
 		return
 	}
 
 	_, err = c.makePVC(s.Name)
-	if !errors.IsAlreadyExists(err) {
+	if !errors.IsAlreadyExists(err) && err != nil {
 		return
 	}
 
@@ -266,10 +266,10 @@ func (c *MySqlController) onDelete(obj interface{}) {
 
 	s := obj.(*mysql.MySql).DeepCopy()
 
-	if c.deleteDeployment(s.Name) != nil {
+	if c.deleteService(s.Name) != nil {
 		return
 	}
-	if c.deleteService(s.Name) != nil {
+	if c.deleteDeployment(s.Name) != nil {
 		return
 	}
 	if c.deletePVC(s.Name) != nil {
