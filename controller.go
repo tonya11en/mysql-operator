@@ -134,10 +134,22 @@ func (c *MySqlController) makeService(name string, port int32) (*v1.Service, err
 	})
 
 	if err != nil {
-		fmt.Println("failed to create service.", err)
+		fmt.Println("failed to create service:", err)
 	}
 
 	return svc, err
+}
+
+func (c *MySqlController) deleteService(name string) error {
+	coreV1Client := c.context.Clientset.CoreV1()
+
+	var options meta_v1.DeleteOptions
+	err := coreV1Client.Services(v1.NamespaceDefault).Delete(name, &options)
+	if err != nil {
+		fmt.Println("failed to delete service:", err)
+	}
+
+	return err
 }
 
 // Create a PVC. Note that this is specific to the example found here:
@@ -147,7 +159,7 @@ func (c *MySqlController) makePVC(name string) (*v1.PersistentVolumeClaim, error
 	coreV1Client := c.context.Clientset.CoreV1()
 	pvc, err := coreV1Client.PersistentVolumeClaims(v1.NamespaceDefault).Create(&v1.PersistentVolumeClaim{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name: name,
+			Name: getPvcName(name),
 		},
 		Spec: v1.PersistentVolumeClaimSpec{
 			AccessModes: []v1.PersistentVolumeAccessMode{"ReadWriteOnce"},
@@ -160,16 +172,26 @@ func (c *MySqlController) makePVC(name string) (*v1.PersistentVolumeClaim, error
 	})
 
 	if err != nil {
-		fmt.Println("failed to create pvc.", err)
+		fmt.Println("failed to create pvc:", err)
 	}
 
 	return pvc, err
 }
 
+func (c *MySqlController) deletePVC(name string) error {
+	coreV1Client := c.context.Clientset.CoreV1()
+	var options meta_v1.DeleteOptions
+	err := coreV1Client.PersistentVolumeClaims(v1.NamespaceDefault).Delete(getPvcName(name), &options)
+	if err != nil {
+		fmt.Println("failed to delete pvc:", err)
+	}
+	return err
+}
+
 // Make a deployment. Note that this is specific to the example found here:
 // https://kubernetes.io/docs/tasks/run-application/run-single-instance-stateful-application/
 func (c *MySqlController) makeDeployment(name string, podSpec v1.PodTemplateSpec) (*v1beta2.Deployment, error) {
-	fmt.Println("Making deployment @tallen1")
+	fmt.Println("Making deployment")
 	appsClient := c.context.Clientset.AppsV1beta2()
 	deployment, err := appsClient.Deployments(v1.NamespaceDefault).Create(&v1beta2.Deployment{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -187,10 +209,26 @@ func (c *MySqlController) makeDeployment(name string, podSpec v1.PodTemplateSpec
 	})
 
 	if err != nil {
-		fmt.Println("failed to create deployment.", err)
+		fmt.Println("failed to create deployment:", err)
 	}
 
 	return deployment, err
+}
+
+func (c *MySqlController) deleteDeployment(name string) error {
+	appsClient := c.context.Clientset.AppsV1beta2()
+	var options meta_v1.DeleteOptions
+
+	err := appsClient.Deployments(v1.NamespaceDefault).Delete(name, &options)
+	if err != nil {
+		fmt.Println("failed to delete deployment:", err)
+	}
+
+	return err
+}
+
+func getPvcName(objName string) string {
+	return objName + "-pv-claim"
 }
 
 func (c *MySqlController) onAdd(obj interface{}) {
@@ -203,7 +241,7 @@ func (c *MySqlController) onAdd(obj interface{}) {
 		return
 	}
 
-	_, err = c.makePVC(s.Name + "-pv-claim")
+	_, err = c.makePVC(s.Name)
 	if err != nil {
 		return
 	}
@@ -221,4 +259,16 @@ func (c *MySqlController) onUpdate(oldObj, newObj interface{}) {
 
 func (c *MySqlController) onDelete(obj interface{}) {
 	fmt.Println("Handling MySql delete")
+
+	s := obj.(*mysql.MySql).DeepCopy()
+
+	if c.deleteDeployment(s.Name) != nil {
+		return
+	}
+	if c.deleteService(s.Name) != nil {
+		return
+	}
+	if c.deletePVC(s.Name) != nil {
+		return
+	}
 }
