@@ -323,7 +323,6 @@
     "third_party/forked/golang/reflect"
   ]
   revision = "019ae5ada31de202164b118aee88ee2d14075c31"
-  version = "kubernetes-1.8.0"
 
 [[projects]]
   name = "k8s.io/client-go"
@@ -388,6 +387,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0d645d2297e61062f5b3e0d4b1c5e5ead882e3991dc7ad8052ecaa987b237d4b"
+  inputs-digest = "3e16d5940197268bc45b19f46557e23135727e254a97f7796ffebfa1e8a67bb4"
   solver-name = "gps-cdcl"
   solver-version = 1
