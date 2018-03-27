@@ -15,7 +15,7 @@ CGO_ENABLED=0 GOOS=linux go build
 
 # Build the docker container.
 docker build -t mysql-operator:0.1 .
-docker save mysql-operator:0.1 | eval $(minikube docker-env) # Only needed for minikube.
+docker save mysql-operator:0.1 | (eval $(minikube docker-env) && docker load) # Only needed for minikube.
 ```
 
 ## Using the Operator
