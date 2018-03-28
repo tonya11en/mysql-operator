@@ -10,12 +10,14 @@ rules:
   - persistentvolumeclaims
   verbs:
   - create
+  - delete
 - apiGroups:
   - apps
   resources:
   - deployments
   verbs:
   - create
+  - delete
 - apiGroups:
   - extensions
   resources:
