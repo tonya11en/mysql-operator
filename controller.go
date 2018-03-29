@@ -103,7 +103,7 @@ func (c *MySqlController) makePodSpec(objName string, ctrName string, ctrImage s
 					Name: volumeName,
 					VolumeSource: v1.VolumeSource{
 						PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
-							ClaimName: "mysql-pv-claim",
+							ClaimName: objName + "-pv-claim",
 						},
 					},
 				},
